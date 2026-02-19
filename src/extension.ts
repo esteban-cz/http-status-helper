@@ -14,86 +14,96 @@
 //     You should have received a copy of the GNU General Public License
 //     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import * as vscode from "vscode";
+import * as vscode from 'vscode'
 import {
   STATUS_CODE_GROUPS,
   STATUS_CODES,
   STATUS_CODES_BY_CODE,
   STATUS_GROUP_ORDER
-} from "./statusCodes";
-import type { StatusCodeCategory, StatusCodeInfo } from "./types";
+} from './statusCodes'
+import type { StatusCodeCategory, StatusCodeInfo } from './types'
 
-const STATUS_CODE_REGEX = /\b([1-5]\d{2})\b/;
+const STATUS_CODE_REGEX = /\b([1-5]\d{2})\b/
+const CONFIG_SECTION = 'httpStatus'
+const HOVER_FILETYPES_SETTING = 'hover.enabledFiletypes'
+const ALL_FILETYPES_WILDCARD = '*'
 
 type CategoryQuickPickItem = vscode.QuickPickItem & {
-  category: StatusCodeCategory;
-};
+  category: StatusCodeCategory
+}
 
 type StatusQuickPickItem = vscode.QuickPickItem & {
-  status: StatusCodeInfo;
-};
+  status: StatusCodeInfo
+}
 
 type StatusOrBackQuickPickItem = vscode.QuickPickItem & {
-  status?: StatusCodeInfo;
-};
+  status?: StatusCodeInfo
+}
 
 export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(
-    vscode.languages.registerHoverProvider("*", {
+    vscode.languages.registerHoverProvider('*', {
       provideHover(document, position) {
-        const range = document.getWordRangeAtPosition(position, STATUS_CODE_REGEX);
+        if (!isHoverEnabledForDocument(document)) {
+          return
+        }
+
+        const range = document.getWordRangeAtPosition(
+          position,
+          STATUS_CODE_REGEX
+        )
         if (!range) {
-          return;
+          return
         }
 
-        const rawCode = document.getText(range);
+        const rawCode = document.getText(range)
         if (!/^[1-5]\d{2}$/.test(rawCode)) {
-          return;
+          return
         }
 
-        const status = STATUS_CODES_BY_CODE[Number(rawCode)];
+        const status = STATUS_CODES_BY_CODE[Number(rawCode)]
         if (!status) {
-          return;
+          return
         }
 
         const markdown = new vscode.MarkdownString(
           `**${status.title}**\n\n${status.description}\n\n` +
             `[More Info](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/${status.code})`
-        );
-        markdown.isTrusted = false;
+        )
+        markdown.isTrusted = false
 
-        return new vscode.Hover(markdown, range);
+        return new vscode.Hover(markdown, range)
       }
     })
-  );
+  )
 
   context.subscriptions.push(
-    vscode.commands.registerCommand("httpStatus.insertCode", async () => {
+    vscode.commands.registerCommand('httpStatus.insertCode', async () => {
       while (true) {
-        const category = await pickCategory();
+        const category = await pickCategory()
         if (!category) {
-          return;
+          return
         }
 
         while (true) {
-          const statusOrBack = await pickCode(category);
-          if (statusOrBack === "back") {
-            break;
+          const statusOrBack = await pickCode(category)
+          if (statusOrBack === 'back') {
+            break
           }
 
           if (!statusOrBack) {
-            return;
+            return
           }
 
-          await insertCodeIntoEditor(String(statusOrBack.code));
-          return;
+          await insertCodeIntoEditor(String(statusOrBack.code))
+          return
         }
       }
     })
-  );
+  )
 
   context.subscriptions.push(
-    vscode.commands.registerCommand("httpStatus.openDocs", async () => {
+    vscode.commands.registerCommand('httpStatus.openDocs', async () => {
       const picked = await vscode.window.showQuickPick(
         STATUS_CODES.slice()
           .sort((a, b) => a.code - b.code)
@@ -103,17 +113,17 @@ export function activate(context: vscode.ExtensionContext): void {
             detail: status.description,
             status
           })),
-        { placeHolder: "Select an HTTP status code to open docs" }
-      );
+        { placeHolder: 'Select an HTTP status code to open docs' }
+      )
 
       if (!picked) {
-        return;
+        return
       }
 
-      const url = `https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/${picked.status.code}`;
-      void vscode.env.openExternal(vscode.Uri.parse(url));
+      const url = `https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/${picked.status.code}`
+      void vscode.env.openExternal(vscode.Uri.parse(url))
     })
-  );
+  )
 }
 
 async function pickCategory(): Promise<StatusCodeCategory | undefined> {
@@ -123,26 +133,28 @@ async function pickCategory(): Promise<StatusCodeCategory | undefined> {
       description: `${STATUS_CODE_GROUPS[category].length} codes`,
       category
     })),
-    { placeHolder: "Select an HTTP status category" }
-  );
+    { placeHolder: 'Select an HTTP status category' }
+  )
 
-  return picked?.category;
+  return picked?.category
 }
 
 async function pickCode(
   category: StatusCodeCategory
-): Promise<StatusCodeInfo | "back" | undefined> {
-  const statuses = STATUS_CODE_GROUPS[category];
+): Promise<StatusCodeInfo | 'back' | undefined> {
+  const statuses = STATUS_CODE_GROUPS[category]
   if (statuses.length === 0) {
-    vscode.window.showWarningMessage(`No status codes available for ${category}.`);
-    return undefined;
+    vscode.window.showWarningMessage(
+      `No status codes available for ${category}.`
+    )
+    return undefined
   }
 
   const picked = await vscode.window.showQuickPick(
     [
       {
-        label: "$(arrow-left) Back to categories",
-        detail: "Return to 1xx, 2xx, 3xx, 4xx, 5xx, WebDAV/Other",
+        label: '$(arrow-left) Back to categories',
+        detail: 'Return to 1xx, 2xx, 3xx, 4xx, 5xx, WebDAV/Other',
         status: undefined
       },
       ...statuses.map<StatusQuickPickItem>((status) => ({
@@ -152,39 +164,96 @@ async function pickCode(
       }))
     ] satisfies StatusOrBackQuickPickItem[],
     { placeHolder: `Select an HTTP status code from ${category}` }
-  );
+  )
 
   if (!picked) {
-    return undefined;
+    return undefined
   }
 
   if (!picked.status) {
-    return "back";
+    return 'back'
   }
 
-  return picked.status;
+  return picked.status
 }
 
 async function insertCodeIntoEditor(value: string): Promise<void> {
-  const editor = vscode.window.activeTextEditor;
+  const editor = vscode.window.activeTextEditor
   if (!editor) {
-    vscode.window.showErrorMessage("Cannot insert status code because no editor is active.");
-    return;
+    vscode.window.showErrorMessage(
+      'Cannot insert status code because no editor is active.'
+    )
+    return
   }
 
   const success = await editor.edit((editBuilder) => {
     for (const selection of editor.selections) {
       if (selection.isEmpty) {
-        editBuilder.insert(selection.start, value);
+        editBuilder.insert(selection.start, value)
       } else {
-        editBuilder.replace(selection, value);
+        editBuilder.replace(selection, value)
       }
     }
-  });
+  })
 
   if (!success) {
-    vscode.window.showErrorMessage("Failed to insert status code.");
+    vscode.window.showErrorMessage('Failed to insert status code.')
   }
 }
 
 export function deactivate(): void {}
+
+function isHoverEnabledForDocument(document: vscode.TextDocument): boolean {
+  const configuredFiletypes = getConfiguredHoverFiletypes()
+
+  if (configuredFiletypes.has(ALL_FILETYPES_WILDCARD)) {
+    return true
+  }
+
+  const languageId = document.languageId.toLowerCase()
+  if (configuredFiletypes.has(languageId)) {
+    return true
+  }
+
+  const extension = getFileExtension(document.fileName)
+  if (!extension) {
+    return false
+  }
+
+  return (
+    configuredFiletypes.has(extension) ||
+    configuredFiletypes.has(`.${extension}`)
+  )
+}
+
+function getConfiguredHoverFiletypes(): Set<string> {
+  const configured = vscode.workspace
+    .getConfiguration(CONFIG_SECTION)
+    .get<unknown>(HOVER_FILETYPES_SETTING)
+
+  if (!Array.isArray(configured)) {
+    return new Set([ALL_FILETYPES_WILDCARD])
+  }
+
+  const normalized = configured
+    .filter((value): value is string => typeof value === 'string')
+    .map((value) => value.trim().toLowerCase())
+    .filter((value) => value.length > 0)
+
+  if (normalized.length === 0) {
+    return new Set([ALL_FILETYPES_WILDCARD])
+  }
+
+  return new Set(normalized)
+}
+
+function getFileExtension(fileName: string): string {
+  const normalized = fileName.toLowerCase()
+  const lastDotIndex = normalized.lastIndexOf('.')
+
+  if (lastDotIndex < 0 || lastDotIndex === normalized.length - 1) {
+    return ''
+  }
+
+  return normalized.slice(lastDotIndex + 1)
+}

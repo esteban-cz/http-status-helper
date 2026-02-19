@@ -1,6 +1,6 @@
 {
-  "version": "1.0.0",
-  "name": "http-status-helper",
+  "version": "1.0.1",
+  "name": "http-status-helpers",
   "displayName": "HTTP Status Helper",
   "description": "Hover and insert HTTP status codes in VS Code.",
   "publisher": "esty",
@@ -34,9 +34,24 @@
         "command": "httpStatus.openDocs",
         "title": "HTTP Status: Open Docs"
       }
-    ]
+    ],
+    "configuration": {
+      "title": "HTTP Status Helper",
+      "properties": {
+        "httpStatus.hover.enabledFiletypes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "*"
+          ],
+          "markdownDescription": "Controls which file types show HTTP status code hover info. Use language IDs (`javascript`, `typescript`), file extensions (`.js`, `ts`), or `*` for all file types."
+        }
+      }
+    }
   },
- "scripts": {
+  "scripts": {
     "vscode:prepublish": "npm run package",
     "vscode:package": "vsce package",
     "update": "ncu -u && npm install",

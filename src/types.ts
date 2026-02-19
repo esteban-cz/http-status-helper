@@ -15,16 +15,16 @@
 //     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 export type StatusCodeCategory =
-  | "1xx"
-  | "2xx"
-  | "3xx"
-  | "4xx"
-  | "5xx"
-  | "WebDAV/Other";
+  | '1xx'
+  | '2xx'
+  | '3xx'
+  | '4xx'
+  | '5xx'
+  | 'WebDAV/Other'
 
 export interface StatusCodeInfo {
-  code: number;
-  title: string;
-  description: string;
-  category: StatusCodeCategory;
+  code: number
+  title: string
+  description: string
+  category: StatusCodeCategory
 }

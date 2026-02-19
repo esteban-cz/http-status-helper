@@ -40,9 +40,20 @@
 - `HTTP Status: Insert Code` (`httpStatus.insertCode`)
 - `HTTP Status: Open Docs` (`httpStatus.openDocs`)
 
+## Settings
+
+- `httpStatus.hover.enabledFiletypes`:
+  - default: `["*"]` (enabled for all files)
+  - supports language IDs like `javascript`, `typescript`
+  - supports file extensions like `.js` or `ts`
+
 ---
 
 ## Release Notes
+
+## v1.0.1
+
+- Added `httpStatus.hover.enabledFiletypes`
 
 ## v1.0.0
 
